@@ -15,7 +15,7 @@ distclean: clean
 
 install:
 	$(MKDIR) $(DESTDIR)$(INCLUDEDIR)
-	$(INSTALL) -m 0644 -- ar.h $(DESTDIR)$(INCLUDEDIR)/ar.h
+	$(INSTALL) -m 0644 ar.h $(DESTDIR)$(INCLUDEDIR)/ar.h
 
 uninstall:
 	$(RM) -- $(DESTDIR)$(INCLUDEDIR)/ar.h

@@ -34,7 +34,7 @@ distclean: clean
 
 install: $(TARGETS)
 	$(MKDIR) $(DESTDIR)$(BINDIR)
-	$(INSTALL) -m 0755 -- ar $(DESTDIR)$(BINDIR)/ar
+	$(INSTALL) -m 0755 ar $(DESTDIR)$(BINDIR)/ar
 
 uninstall:
 	$(RM) -- $(DESTDIR)$(BINDIR)/ar
