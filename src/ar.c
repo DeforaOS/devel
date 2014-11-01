@@ -1,5 +1,5 @@
 /* $Id$ */
-/* Copyright (c) 2011 Pierre Pronchery <khorben@defora.org> */
+/* Copyright (c) 2005-2014 Pierre Pronchery <khorben@defora.org> */
 /* This file is part of DeforaOS Unix devel */
 /* This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,18 +25,15 @@
 #include <errno.h>
 #include <ar.h>
 
-
-/* constants */
-#ifndef PACKAGE
-# define PACKAGE	"ar"
+#ifndef PROGNAME
+# define PROGNAME "ar"
 #endif
 
-
-/* macros */
 #define min(a, b) ((a) < (b) ? (a) : (b))
 
 
 /* ar */
+/* private */
 /* types */
 typedef int Prefs;
 #define PREFS_d 0x01
@@ -49,16 +46,10 @@ typedef int Prefs;
 #define PREFS_v 0x80
 
 
-/* functions */
-/* private */
+/* prototypes */
+static int _ar(Prefs * prefs, char const * archive, int filec, char * filev[]);
+
 static int _ar_error(char const * message, int ret);
-static int _do_sig_check(char const * archive, FILE * fp);
-static int _do_hdr_check(char const * archive, struct ar_hdr * hdr);
-static int _do_seek_next(char const * archive, FILE * fp, struct ar_hdr * hdr);
-static int _ar_do_r(Prefs * prefs, char const * archive, int filec,
-		char * filev[]);
-static int _ar_do_tx(Prefs * prefs, char const * archive, FILE * fp, int filec,
-		char * filev[]);
 
 /* accessors */
 static struct tm * _ar_get_date(struct ar_hdr * ar);
@@ -67,72 +58,17 @@ static int _ar_get_gid(struct ar_hdr * ar, gid_t * gid);
 static int _ar_get_mode(struct ar_hdr * ar, mode_t * mode);
 static int _ar_get_size(struct ar_hdr * ar, size_t * size);
 
-static struct tm * _ar_get_date(struct ar_hdr * ar)
-{
-	struct tm * ret;
-	char buf[sizeof(ar->ar_date) + 1];
-	time_t date;
 
-	if(ar->ar_date[0] == '\0')
-		return NULL;
-	memcpy(buf, ar->ar_date, sizeof(ar->ar_date));
-	buf[sizeof(buf) - 1] = '\0';
-	date = strtol(buf, NULL, 10);
-	if((ret = gmtime(&date)) == NULL)
-		return NULL;
-	return ret;
-}
+/* functions */
+/* ar */
+static int _do_sig_check(char const * archive, FILE * fp);
+static int _do_hdr_check(char const * archive, struct ar_hdr * hdr);
+static int _do_seek_next(char const * archive, FILE * fp, struct ar_hdr * hdr);
+static int _ar_do_r(Prefs * prefs, char const * archive, int filec,
+		char * filev[]);
+static int _ar_do_tx(Prefs * prefs, char const * archive, FILE * fp, int filec,
+		char * filev[]);
 
-static int _ar_get_uid(struct ar_hdr * ar, uid_t * uid)
-{
-	char buf[sizeof(ar->ar_uid) + 1];
-
-	if(ar->ar_uid[0] == '\0')
-		return 1;
-	memcpy(buf, ar->ar_uid, sizeof(ar->ar_uid));
-	buf[sizeof(buf) - 1] = '\0';
-	*uid = strtoul(buf, NULL, 10);
-	return 0;
-}
-
-static int _ar_get_gid(struct ar_hdr * ar, gid_t * gid)
-{
-	char buf[sizeof(ar->ar_gid) + 1];
-
-	if(ar->ar_gid[0] == '\0')
-		return 1;
-	memcpy(buf, ar->ar_gid, sizeof(ar->ar_gid));
-	buf[sizeof(buf) - 1] = '\0';
-	*gid = strtoul(buf, NULL, 10);
-	return 0;
-}
-
-static int _ar_get_mode(struct ar_hdr * ar, mode_t * mode)
-{
-	char buf[sizeof(ar->ar_mode) + 1];
-
-	if(ar->ar_mode[0] == '\0')
-		return 1;
-	memcpy(buf, ar->ar_mode, sizeof(ar->ar_mode));
-	buf[sizeof(buf) - 1] = '\0';
-	*mode = strtoul(buf, NULL, 8);
-	return 0;
-}
-
-static int _ar_get_size(struct ar_hdr * ar, size_t * size)
-{
-	char buf[sizeof(ar->ar_size) + 1];
-
-	if(ar->ar_size[0] == '\0')
-		return 1;
-	memcpy(buf, ar->ar_size, sizeof(ar->ar_size));
-	buf[sizeof(buf) - 1] = '\0';
-	*size = strtoul(buf, NULL, 10);
-	return 0;
-}
-
-
-/* public */
 static int _ar(Prefs * prefs, char const * archive, int filec, char * filev[])
 {
 	int ret = 0;
@@ -155,14 +91,6 @@ static int _ar(Prefs * prefs, char const * archive, int filec, char * filev[])
 	return ret;
 }
 
-static int _ar_error(char const * message, int ret)
-{
-	fputs(PACKAGE ": ", stderr);
-	perror(message);
-	return ret;
-}
-
-
 static int _do_create(Prefs * prefs, char const * archive, int filec,
 		char * filev[]);
 static int _do_replace(Prefs * prefs, char const * archive, FILE * fp,
@@ -178,7 +106,7 @@ static int _ar_do_r(Prefs * prefs, char const * archive, int filec,
 		if(errno != ENOENT)
 			return _ar_error(archive, 1);
 		if(!(*prefs & PREFS_c))
-			fprintf(stderr, "%s%s%s", PACKAGE ": ", archive,
+			fprintf(stderr, "%s%s%s", PROGNAME ": ", archive,
 					": Creating archive\n");
 		return _do_create(prefs, archive, filec, filev);
 	}
@@ -295,7 +223,7 @@ static int _do_replace(Prefs * prefs, char const * archive, FILE * fp,
 					!= 0)
 				continue;
 			/* FIXME implement */
-			fprintf(stderr, "%s%s%s", PACKAGE ": ", filev[i],
+			fprintf(stderr, "%s%s%s", PROGNAME ": ", filev[i],
 				       	": replacing not implemented yet\n");
 			filev[i] = ""; /* XXX ugly hack */
 		}
@@ -316,7 +244,7 @@ static int _do_hdr_check(char const * archive, struct ar_hdr * hdr)
 {
 	if(strncmp(ARFMAG, hdr->ar_fmag, sizeof(hdr->ar_fmag)) != 0)
 	{
-		fprintf(stderr, "%s%s%s", PACKAGE ": ", archive,
+		fprintf(stderr, "%s%s%s", PROGNAME ": ", archive,
 			       	": Invalid archive\n");
 		return 1;
 	}
@@ -329,7 +257,7 @@ static int _do_seek_next(char const * archive, FILE * fp, struct ar_hdr * hdr)
 
 	if(_ar_get_size(hdr, &size) != 0)
 	{
-		fprintf(stderr, "%s%s%s", PACKAGE ": ", archive,
+		fprintf(stderr, "%s%s%s", PROGNAME ": ", archive,
 				": Invalid archive\n");
 		return 1;
 	}
@@ -337,7 +265,6 @@ static int _do_seek_next(char const * archive, FILE * fp, struct ar_hdr * hdr)
 		return _ar_error(archive, 1);
 	return 0;
 }
-
 
 static int _do_t(Prefs * prefs, char const * archive, FILE * fp,
 		struct ar_hdr * hdr, char const * name);
@@ -392,7 +319,7 @@ static int _ar_do_tx(Prefs * prefs, char const * archive, FILE * fp, int filec,
 			continue;
 		}
 		/* FIXME clean up this so it won't have to appear */
-		fputs(PACKAGE ": Not implemented yet\n", stderr);
+		fputs(PROGNAME ": Not implemented yet\n", stderr);
 		return 1;
 	}
 	return 0;
@@ -407,7 +334,8 @@ static int _do_sig_check(char const * archive, FILE * fp)
 		return _ar_error(archive, 1);
 	if(strncmp(ARMAG, sig, SARMAG) == 0)
 		return 0;
-	fprintf(stderr, "%s%s%s", PACKAGE ": ", archive, ": Invalid archive\n");
+	fprintf(stderr, "%s%s%s", PROGNAME ": ", archive,
+			": Invalid archive\n");
 	return 1;
 }
 
@@ -443,7 +371,7 @@ static int _t_print_long(char const * archive, struct ar_hdr * hdr,
 			|| _ar_get_size(hdr, &size) != 0
 			|| (tm = _ar_get_date(hdr)) == NULL)
 	{
-		fprintf(stderr, "%s%s%s", PACKAGE ": ", archive,
+		fprintf(stderr, "%s%s%s", PROGNAME ": ", archive,
 				": Invalid archive\n");
 		return 1;
 	}
@@ -501,7 +429,7 @@ static int _do_x(Prefs * prefs, char const * archive, FILE * fp,
 			|| _ar_get_size(hdr, &size) != 0
 			|| _ar_get_date(hdr) == NULL)
 	{
-		fprintf(stderr, "%s%s%s", PACKAGE ": ", archive,
+		fprintf(stderr, "%s%s%s", PROGNAME ": ", archive,
 				": Invalid archive\n");
 		return 1;
 	}
@@ -535,14 +463,98 @@ static int _do_x(Prefs * prefs, char const * archive, FILE * fp,
 }
 
 
-/* usage */
-static int _usage(void)
+/* accessors */
+/* ar_get_date */
+static struct tm * _ar_get_date(struct ar_hdr * ar)
 {
-	fputs("Usage: ar -d[-v] archive file...\n\
-       ar -p[-v] archive file...\n\
-       ar -r[-cuv] archive file...\n\
-       ar -t[-v] archive [file...]\n\
-       ar -x[-v] archive [file...]\n\
+	struct tm * ret;
+	char buf[sizeof(ar->ar_date) + 1];
+	time_t date;
+
+	if(ar->ar_date[0] == '\0')
+		return NULL;
+	memcpy(buf, ar->ar_date, sizeof(ar->ar_date));
+	buf[sizeof(buf) - 1] = '\0';
+	date = strtol(buf, NULL, 10);
+	if((ret = gmtime(&date)) == NULL)
+		return NULL;
+	return ret;
+}
+
+
+/* ar_get_uid */
+static int _ar_get_uid(struct ar_hdr * ar, uid_t * uid)
+{
+	char buf[sizeof(ar->ar_uid) + 1];
+
+	if(ar->ar_uid[0] == '\0')
+		return 1;
+	memcpy(buf, ar->ar_uid, sizeof(ar->ar_uid));
+	buf[sizeof(buf) - 1] = '\0';
+	*uid = strtoul(buf, NULL, 10);
+	return 0;
+}
+
+
+/* ar_get_gid */
+static int _ar_get_gid(struct ar_hdr * ar, gid_t * gid)
+{
+	char buf[sizeof(ar->ar_gid) + 1];
+
+	if(ar->ar_gid[0] == '\0')
+		return 1;
+	memcpy(buf, ar->ar_gid, sizeof(ar->ar_gid));
+	buf[sizeof(buf) - 1] = '\0';
+	*gid = strtoul(buf, NULL, 10);
+	return 0;
+}
+
+
+/* ar_get_mode */
+static int _ar_get_mode(struct ar_hdr * ar, mode_t * mode)
+{
+	char buf[sizeof(ar->ar_mode) + 1];
+
+	if(ar->ar_mode[0] == '\0')
+		return 1;
+	memcpy(buf, ar->ar_mode, sizeof(ar->ar_mode));
+	buf[sizeof(buf) - 1] = '\0';
+	*mode = strtoul(buf, NULL, 8);
+	return 0;
+}
+
+
+/* ar_get_size */
+static int _ar_get_size(struct ar_hdr * ar, size_t * size)
+{
+	char buf[sizeof(ar->ar_size) + 1];
+
+	if(ar->ar_size[0] == '\0')
+		return 1;
+	memcpy(buf, ar->ar_size, sizeof(ar->ar_size));
+	buf[sizeof(buf) - 1] = '\0';
+	*size = strtoul(buf, NULL, 10);
+	return 0;
+}
+
+
+/* ar_error */
+static int _ar_error(char const * message, int ret)
+{
+	fputs(PROGNAME ": ", stderr);
+	perror(message);
+	return ret;
+}
+
+
+/* ar_usage */
+static int _ar_usage(void)
+{
+	fputs("Usage: " PROGNAME " -d[-v] archive file...\n\
+       " PROGNAME " -p[-v] archive file...\n\
+       " PROGNAME " -r[-cuv] archive file...\n\
+       " PROGNAME " -t[-v] archive [file...]\n\
+       " PROGNAME " -x[-v] archive [file...]\n\
   -d	Delete one or more files from the archive\n\
   -r	Replace or add files to archive\n\
   -t	Write a table of contents of archive\n\
@@ -589,12 +601,12 @@ int main(int argc, char * argv[])
 				p |= PREFS_v;
 				break;
 			default:
-				return _usage();
+				return _ar_usage();
 		}
 	if(!(p & (PREFS_d | PREFS_r | PREFS_t | PREFS_x))
 			|| optind == argc
 			|| (optind+1 >= argc && !(p & (PREFS_t | PREFS_x))))
-		return _usage();
+		return _ar_usage();
 	return (_ar(&p, argv[optind], argc - optind - 1, &argv[optind + 1])
 			== 0) ? 0 : 2;
 }
