@@ -1,4 +1,5 @@
-TARGETS	= ar
+TARGETS	= $(OBJDIR)ar
+OBJDIR	=
 PREFIX	= /usr/local
 DESTDIR	=
 BINDIR	= $(PREFIX)/bin
@@ -16,15 +17,15 @@ INSTALL	= install
 
 all: $(TARGETS)
 
-ar_OBJS = ar.o
+ar_OBJS = $(OBJDIR)ar.o
 ar_CFLAGS = $(CPPFLAGSF) $(CPPFLAGS) $(CFLAGSF) $(CFLAGS)
 ar_LDFLAGS = $(LDFLAGSF) $(LDFLAGS)
 
-ar: $(ar_OBJS)
-	$(CC) -o ar $(ar_OBJS) $(ar_LDFLAGS)
+$(OBJDIR)ar: $(ar_OBJS)
+	$(CC) -o $(OBJDIR)ar $(ar_OBJS) $(ar_LDFLAGS)
 
-ar.o: ar.c
-	$(CC) $(ar_CFLAGS) -c ar.c
+$(OBJDIR)ar.o: ar.c
+	$(CC) $(ar_CFLAGS) -o $(OBJDIR)ar.o -c ar.c
 
 clean:
 	$(RM) -- $(ar_OBJS)
@@ -34,7 +35,7 @@ distclean: clean
 
 install: $(TARGETS)
 	$(MKDIR) $(DESTDIR)$(BINDIR)
-	$(INSTALL) -m 0755 ar $(DESTDIR)$(BINDIR)/ar
+	$(INSTALL) -m 0755 $(OBJDIR)ar $(DESTDIR)$(BINDIR)/ar
 
 uninstall:
 	$(RM) -- $(DESTDIR)$(BINDIR)/ar
