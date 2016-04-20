@@ -261,6 +261,8 @@ static int _do_seek_next(char const * archive, FILE * fp, struct ar_hdr * hdr)
 				": Invalid archive\n");
 		return 1;
 	}
+	if(size & 0x1)
+		size++;
 	if(fseek(fp, size, SEEK_CUR) != 0)
 		return _ar_error(archive, 1);
 	return 0;
