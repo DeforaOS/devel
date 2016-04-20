@@ -219,7 +219,7 @@ static int _do_replace(Prefs * prefs, char const * archive, FILE * fp,
 			if(strlen(filev[i]) > sizeof(hdr.ar_name))
 				continue;
 			/* XXX test against basename(filev[i]) instead? */
-			if(strncmp(hdr.ar_name, filev[i], sizeof(hdr.ar_name))
+			if(memcmp(hdr.ar_name, filev[i], sizeof(hdr.ar_name))
 					!= 0)
 				continue;
 			/* FIXME implement */
@@ -242,7 +242,7 @@ static int _do_replace(Prefs * prefs, char const * archive, FILE * fp,
 
 static int _do_hdr_check(char const * archive, struct ar_hdr * hdr)
 {
-	if(strncmp(ARFMAG, hdr->ar_fmag, sizeof(hdr->ar_fmag)) != 0)
+	if(memcmp(ARFMAG, hdr->ar_fmag, sizeof(hdr->ar_fmag)) != 0)
 	{
 		fprintf(stderr, "%s%s%s", PROGNAME ": ", archive,
 			       	": Invalid archive\n");
@@ -334,7 +334,7 @@ static int _do_sig_check(char const * archive, FILE * fp)
 	if(fread(sig, sizeof(sig), 1, fp) != 1
 			&& !feof(fp))
 		return _ar_error(archive, 1);
-	if(strncmp(ARMAG, sig, SARMAG) == 0)
+	if(memcmp(ARMAG, sig, sizeof(sig)) == 0)
 		return 0;
 	fprintf(stderr, "%s%s%s", PROGNAME ": ", archive,
 			": Invalid archive\n");
