@@ -147,6 +147,8 @@ static int _create_append(Prefs * prefs, char const * archive, FILE * fp,
 	FILE * fp2;
 	char buf[BUFSIZ];
 	size_t i;
+	size_t size;
+	const char newline = '\n';
 
 	if(*prefs & PREFS_v)
 		printf("a - %s\n", filename);
@@ -157,8 +159,8 @@ static int _create_append(Prefs * prefs, char const * archive, FILE * fp,
 		fclose(fp2);
 		return 1;
 	}
-	while((i = fread(buf, sizeof(char), sizeof(buf), fp2)) > 0
-			&& fwrite(buf, sizeof(char), i, fp) == i);
+	for(size = 0; (i = fread(buf, sizeof(char), sizeof(buf), fp2)) > 0
+			&& fwrite(buf, sizeof(char), i, fp) == i; size += i);
 	if(!feof(fp2) || i > 0)
 	{
 		_ar_error(i > 0 ? archive : filename, 0);
@@ -166,6 +168,8 @@ static int _create_append(Prefs * prefs, char const * archive, FILE * fp,
 		return 1;
 	}
 	if(fclose(fp2) != 0)
+		return _ar_error(filename, 1);
+	if(size & 0x1 && fwrite(&newline, sizeof(newline), 1, fp) != 1)
 		return _ar_error(filename, 1);
 	return 0;
 }
