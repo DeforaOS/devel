@@ -38,7 +38,7 @@ RM="rm -f"
 _date()
 {
 	if [ -n "$SOURCE_DATE_EPOCH" ]; then
-		$DATE -r "$SOURCE_DATE_EPOCH"
+		$DATE -d "@$SOURCE_DATE_EPOCH"
 	else
 		$DATE
 	fi
