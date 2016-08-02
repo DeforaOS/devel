@@ -34,6 +34,17 @@ RM="rm -f"
 
 
 #functions
+#date
+_date()
+{
+	if [ -n "$SOURCE_DATE_EPOCH" ]; then
+		$DATE -r "$SOURCE_DATE_EPOCH"
+	else
+		$DATE
+	fi
+}
+
+
 #debug
 _debug()
 {
@@ -83,7 +94,7 @@ while [ $# -ne 0 ]; do
 
 	[ $clean -eq 0 ]					|| break
 
-	($DATE
+	(_date
 	echo
 	$AR -rv ${OBJDIR}tests.a \
 		$OBJDIR../src/ar.o \
